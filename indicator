@@ -39,16 +39,16 @@ class Sumo():
         ma = prices.rolling(n, min_periods = n).mean() #N-mean
         return ma
 
-    def macd(self, n , m):
-        fast_ma = self.moving_average(self.prices, n)
-        slow_ma = self.moving_average(self.prices, m)
+    def macd(self, prices, n , m):
+        fast_ma = self.moving_average(prices['{0}close'.format(self.tickerlower)], n)
+        slow_ma = self.moving_average(prices['{0}close'.format(self.tickerlower)], m)
         value = fast_ma - slow_ma
         return value
 
-    def stochastic_oscillator(self, n, m): #n is the high or low window
-        low = self.prices['{0}low'.format(self.tickerlower)].rolling(n).min()
-        high = self.prices['{0}high'.format(self.tickerlower)].rolling(n).max()
-        close = self.prices['{0}close'.format(self.tickerlower)]
+    def stochastic_oscillator(self, prices, n, m): #n is the high or low window
+        low = prices['{0}low'.format(self.tickerlower)].rolling(n).min()
+        high = prices['{0}high'.format(self.tickerlower)].rolling(n).max()
+        close = prices['{0}close'.format(self.tickerlower)]
         K = 100*((close - low)/(high-low))
         D = self.moving_average(K, m)     #we use m here to represent the D rolling window
         return K - D
@@ -64,19 +64,24 @@ class Sumo():
         monthly = pd.DataFrame(monthly)
         return monthly
 
-    def indicator_values(self,n , n1 , m):  #n: for rsi  #n1:for macd  #m:for macd
-        rsi_daily = self.rsi_2(self.prices,n).rename('rsi_daily')
-        rsi_weekly = self.rsi_2(self.weekly_conversion(), n).rename('rsi_weekly')
-        rsi_monthly = self.rsi_2(self.monthly_conversion(), n).rename('rsi_monthly')
+    def indicator_values(self, n_rsi , n_macd , m_macd , n_so , m_so):  #n: for rsi  #n1:for macd  #m:for macd
+        rsi_daily = self.rsi_2(self.prices,n_rsi).rename('rsi_daily')
+        rsi_weekly = self.rsi_2(self.weekly_conversion(), n_rsi).rename('rsi_weekly')
+        rsi_monthly = self.rsi_2(self.monthly_conversion(), n_rsi).rename('rsi_monthly')
 
-        macd_daily = self.macd(self.prices, n1, m).rename('macd_daily')
+        macd_daily = self.macd(self.prices, n_macd, m_macd).rename('macd_daily')
+        macd_weekly = self.macd(self.weekly_conversion(), n_macd, m_macd).rename('macd_weekly')
+        macd_monthly = self.macd(self.monthly_conversion(), n_macd, m_macd).rename('macd_monthly')
+
+        so_daily = self.stochastic_oscillator(self.prices,n_so,m_so).rename('so_daily')
+        so_weekly = self.stochastic_oscillator(self.weekly_conversion(), n_so, m_so).rename('so_weekly')
+        so_monthly = self.stochastic_oscillator(self.monthly_conversion(), n_so, m_so).rename('so_monthly')
+
         df_rsi = pd.concat([rsi_daily,rsi_weekly,rsi_monthly],axis =1)
+        df_macd = pd.concat([macd_daily,macd_weekly, macd_monthly], axis=1)
+        df_so = pd.concat([so_daily,so_weekly, so_monthly], axis=1)
 
-        #macd_daily = self.macd(fast,slow)
+        df_indicators = pd.concat([df_rsi, df_macd, df_so], axis =1)
 
 
-        return df_rsi
-
-        #take daily weekly and monthly, parse through RSI, MACD and SO
-        # store variables as a 'self.ticker' string + indicator name
-        #concat all variables and return dataframe
+        return df_indicators
