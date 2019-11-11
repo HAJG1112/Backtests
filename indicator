@@ -1,0 +1,82 @@
+import random
+import numpy as np
+import Prices
+import pandas as pd
+import ffn
+
+class Sumo():
+
+    def __init__(self, ticker, start, end):
+        self.ticker = ticker
+        self.start = start
+        self.end = end
+        self.definition = '{0}:Open,{0}:High,{0}:Low, {0}:Close'.format(self.ticker)
+        self.prices = self.get_prices_X()
+        self.tickerlower = self.ticker.lower().replace('^', '')
+
+    """
+    get_prices_X('^GSPC', '2014-01-01', '2019-01-01')
+    ffn.get('^GSPC:Open,^GSPC:High,^GSPC:Low, ^GSPC:Close', start='2014-01-01', end='2019-01-01')
+    """
+    def get_prices_X(self):
+        p = ffn.get(self.definition, start=self.start, end=self.end)
+        print(self.definition)
+        return p
+
+    def rsi_2(self, prices, n):
+        delta = prices['{0}close'.format(self.tickerlower)].diff()
+        delta = delta[1:]
+        up, down = delta.copy(), delta.copy()  # create a copy
+        up[up < 0] = 0  # assign pos to series
+        down[down > 0] = 0  # assign neg to series
+        roll_up = self.moving_average(up, n)  # try and refernce self MA
+        roll_down = self.moving_average(abs(down), n)
+        rs = roll_up / roll_down
+        rsi = 100 - (100 / (1 + rs))
+        return rsi
+
+    def moving_average(self, prices, n):
+        ma = prices.rolling(n, min_periods = n).mean() #N-mean
+        return ma
+
+    def macd(self, n , m):
+        fast_ma = self.moving_average(self.prices, n)
+        slow_ma = self.moving_average(self.prices, m)
+        value = fast_ma - slow_ma
+        return value
+
+    def stochastic_oscillator(self, n, m): #n is the high or low window
+        low = self.prices['{0}low'.format(self.tickerlower)].rolling(n).min()
+        high = self.prices['{0}high'.format(self.tickerlower)].rolling(n).max()
+        close = self.prices['{0}close'.format(self.tickerlower)]
+        K = 100*((close - low)/(high-low))
+        D = self.moving_average(K, m)     #we use m here to represent the D rolling window
+        return K - D
+
+
+    def weekly_conversion(self):
+        weekly = self.prices[::5]
+        weekly = pd.DataFrame(weekly)
+        return weekly
+
+    def monthly_conversion(self):
+        monthly = self.prices[::20]
+        monthly = pd.DataFrame(monthly)
+        return monthly
+
+    def indicator_values(self,n , n1 , m):  #n: for rsi  #n1:for macd  #m:for macd
+        rsi_daily = self.rsi_2(self.prices,n).rename('rsi_daily')
+        rsi_weekly = self.rsi_2(self.weekly_conversion(), n).rename('rsi_weekly')
+        rsi_monthly = self.rsi_2(self.monthly_conversion(), n).rename('rsi_monthly')
+
+        macd_daily = self.macd(self.prices, n1, m).rename('macd_daily')
+        df_rsi = pd.concat([rsi_daily,rsi_weekly,rsi_monthly],axis =1)
+
+        #macd_daily = self.macd(fast,slow)
+
+
+        return df_rsi
+
+        #take daily weekly and monthly, parse through RSI, MACD and SO
+        # store variables as a 'self.ticker' string + indicator name
+        #concat all variables and return dataframe
