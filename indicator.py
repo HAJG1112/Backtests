@@ -1,6 +1,6 @@
 import random
 import numpy as np
-import Prices
+#import Prices
 import pandas as pd
 import ffn
 
@@ -64,7 +64,7 @@ class Sumo():
         monthly = pd.DataFrame(monthly)
         return monthly
 
-    def indicator_values(self, n_rsi , n_macd , m_macd , n_so , m_so):  #n: for rsi  #n1:for macd  #m:for macd
+    def indicator_values(self, n_rsi , m_rsi, n_macd , m_macd , n_so , m_so):  #n: for rsi  #n1:for macd  #m:for macd
         rsi_daily = self.rsi_2(self.prices,n_rsi).rename('rsi_daily')
         rsi_weekly = self.rsi_2(self.weekly_conversion(), n_rsi).rename('rsi_weekly')
         rsi_monthly = self.rsi_2(self.monthly_conversion(), n_rsi).rename('rsi_monthly')
@@ -83,5 +83,14 @@ class Sumo():
 
         df_indicators = pd.concat([df_rsi, df_macd, df_so], axis =1)
 
+        rsi_ma_daily = self.rsi_ma(self.prices,n_rsi,m_rsi).rename('rsi_ma_daily')
 
         return df_indicators
+
+#################################################################################
+    def rsi_ma(self,prices,n,m):                                                # needs to take the current rsi (for daily weekly and monthly)
+        curr_rsi = self.rsi_2(prices,n)    # and then subtract the 'm' period average rsi
+        ma_rsi = self.moving_average(curr_rsi,m)                                # return this value as rsi_ma
+        rsi_ma = curr_rsi - ma_rsi                                              #
+        return rsi_ma                                                           #
+#################################################################################
