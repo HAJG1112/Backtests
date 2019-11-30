@@ -32,9 +32,13 @@ class vci():
         return (macd)
 
     def scaler(self,x):
-        data = pd.DataFrame(x).rolling(window = 252)  #last 252 days, except today    .iloc[252:]
-        scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1))
-        df_scaled = pd.DataFrame(scaler.fit_transform(data))
+        data = pd.DataFrame(x).rolling(window = 252)  #252 day rolling window    #.iloc[252:]#
+        scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1))   #we take this window and rescale
+        df_scaled = pd.DataFrame(scaler.fit_transform(data))   #distribution for comparison
+        #today = length of distribution +1 in position
+        #take todays value, and compare it to distribution to get todays weight,
+        #take all of 'todays' weights and create weight dataframe
+        #this weighted dataframe is then used in the backtest
         return(df_scaled)
 
     def wrapper(self):   #wraps the weights to be parsed into the strategy
