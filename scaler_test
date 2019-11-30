@@ -40,7 +40,19 @@ class vci():
         #take all of 'todays' weights and create weight dataframe
         #this weighted dataframe is then used in the backtest
         return(df_scaled)
+    
+   def scaler1(self,x):
+        data = x.copy()
+        min = -1 #min weight
+        max = 1 #max weight
+        data = pd.DataFrame(data).rolling(window = 252)  #252 day rolling window    .iloc[252:]
 
+        today = data.iloc[len(data)+1:]   #this is the position of today
+        today_std = (today - data.min(axis=0)) / (data.max(axis=0) - data.min(axis=0))
+        scale = (max - min) / (data.max(axis=0) - data.min(axis=0))
+        today_scaled = scale * today + min - data.min(axis=0) * scale
+        
+        return(today_scaled)
     def wrapper(self):   #wraps the weights to be parsed into the strategy
         macd = self.above_macd()
         signal = macd.copy()
