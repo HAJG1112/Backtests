@@ -32,23 +32,15 @@ class vci():
         return (macd)
 
     def scaler(self,x):
-        data = pd.DataFrame(x).rolling(window = 252)  #252 day rolling window    #.iloc[252:]#
-        scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1))   #we take this window and rescale
-        df_scaled = pd.DataFrame(scaler.fit_transform(data))   #distribution for comparison
-        #today = length of distribution +1 in position
-        #take todays value, and compare it to distribution to get todays weight,
-        #take all of 'todays' weights and create weight dataframe
-        #this weighted dataframe is then used in the backtest
-        return(df_scaled)
-    
-       def scaler1(self,x):
         x = x.copy()
         min = -1 #min weight
         max = 1 #max weight
-        dist = pd.DataFrame(x).rolling(window = 252)  #252 day rolling window
-        today = x.iloc[len(dist)+1:]                  #this is the position of today
+        dist = pd.DataFrame(x).rolling(window = 253)  #252 day rolling window
+        dist_calc = pd.DataFrame(x).rolling(window = 252)
+        today = dist.last()              #this is the position of today
 
-        today_std = (today - dist.min(axis=0)) / (dist.max(axis=0) - dist.min(axis=0))
+        ###leave this, this is how we scale for weights, and its works
+        today_std = (today - dist_calc.min(axis=0)) / (dist_calc.max(axis=0) - dist_calc.min(axis=0))
         today_transformed = today_std * (max - min) + min
 
         return(today_transformed)
