@@ -32,19 +32,15 @@ class vci():
         return (macd)
 
     def scaler(self,x):
-        x = x.copy()
-        min = -1 #min weight
-        max = 1 #max weight
-        today = self.prices   #this needs to start after 252 values
-        dist_calc = pd.DataFrame(x).rolling(window = 253, min_periods=252)
-                                 #this is the position of today
-
-        today_std = (today - dist_calc.min() )/ (dist_calc.max() - dist_calc.min())
+        min = -1          #min weight
+        max = 1          #max weight
+        today = 100   #this needs to start after 252 values
+        dist_calc = pd.DataFrame(x).rolling(window = 252)
+        today_std = (today - dist_calc.min() / dist_calc.max() - dist_calc.min())
         today_transformed = (today_std * (max - min) ) + min
 
         return(today_transformed)
-
-
+        #return(today_transformed)
 
     def wrapper(self):   #wraps the weights to be parsed into the strategy
         macd = self.above_macd()
@@ -68,8 +64,7 @@ i = vci(ticker, start, end,
                  rsi_n,rsi_m,
                  so_n, so_m, fc_window)
 
-data = bt.get('spy')
-print(i.wrapper())
+i.wrapper()
 '''
 s = bt.Strategy('weights',
                         [bt.algos.WeighTarget(i.wrapper()),
