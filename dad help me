@@ -15,7 +15,6 @@ class vci():
         self.ticker = ticker #defines the ticker symbol
         self.start = start  #start date of backtest
         self.end = end    #ends backtest
-        self.prices = bt.get(self.ticker, start = self.start, end = self.end) #initialize getting prices according to ticker
         self.macd_n = macd_n       #MACD short sma window
         self.macd_m = macd_m        #MACD long sma window
         self.rsi_n = rsi_n
@@ -25,25 +24,36 @@ class vci():
         self.fc_window = fc_window
 
 
-    def above_macd(self):
-        short_sma = self.prices.rolling(self.macd_n).mean()
-        long_sma = self.prices.rolling(self.macd_m).mean()
+    def above_macd(self,x):
+        short_sma = x.rolling(self.macd_n).mean()
+        long_sma = x.rolling(self.macd_m).mean()
         macd = (short_sma - long_sma)
         return (macd)
 
     def scaler(self,x):
-        min = -1          #min weight
-        max = 1          #max weight
-        today = 100   #this needs to start after 252 values
-        dist_calc = pd.DataFrame(x).rolling(window = 252)
-        today_std = (today - dist_calc.min() / dist_calc.max() - dist_calc.min())
-        today_transformed = (today_std * (max - min) ) + min
+        x = x.copy()
+        today_df = x[fc_window+1:]#this needs to start after 252 values and roll each value, use a loop
+        today_scaled = []
+        for i in today_df:
+            today = today_df[i]
+            j = (252 + i)
+            dist_calc = x.iloc[i:j]            #create this dataset by taking the 'i-1' position from today up to the past 252 days
+            dist_calc_min = dist_calc.min()
+            dist_calc_max = dist_calc.max()
 
-        return(today_transformed)
-        #return(today_transformed)
+            min = -1  # min weight
+            max = 1  # max weight
 
-    def wrapper(self):   #wraps the weights to be parsed into the strategy
-        macd = self.above_macd()
+            today_std = ((today - dist_calc_min) / (dist_calc_max - dist_calc_min))
+            today_transformed = ((today_std * (max - min)) + min)
+            today_scaled.append(today_transformed)
+        x['scaled'] = today_scaled
+        print(x)
+
+
+
+    def wrapper(self,x):   #wraps the weights to be parsed into the strategy
+        macd = self.above_macd(x)
         signal = macd.copy()
         tw = pd.DataFrame(self.scaler(signal))    #this makes the trading weights
         return tw
@@ -64,7 +74,8 @@ i = vci(ticker, start, end,
                  rsi_n,rsi_m,
                  so_n, so_m, fc_window)
 
-i.wrapper()
+data = bt.get('spy')
+print(i.wrapper(data))
 '''
 s = bt.Strategy('weights',
                         [bt.algos.WeighTarget(i.wrapper()),
