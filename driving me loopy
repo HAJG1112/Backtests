@@ -1,0 +1,101 @@
+import bt
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn import preprocessing
+import numpy as np
+
+class vci():
+
+    def __init__(self, ticker, start, end,
+                 macd_n, macd_m,
+                 rsi_n,rsi_m,
+                 so_n, so_m,
+                 fc_window):
+
+        self.ticker = ticker #defines the ticker symbol
+        self.start = start  #start date of backtest
+        self.end = end    #ends backtest
+        self.macd_n = macd_n       #MACD short sma window
+        self.macd_m = macd_m        #MACD long sma window
+        self.rsi_n = rsi_n
+        self.rsi_m = rsi_m
+        self.so_n = so_n
+        self.so_m = so_m
+        self.fc_window = fc_window
+
+
+    def above_macd(self,x):
+        short_sma = x.rolling(self.macd_n).mean()
+        long_sma = x.rolling(self.macd_m).mean()
+        macd = (short_sma - long_sma)
+        return (macd)
+
+
+    def scaler(self,x):
+        x = x.copy()
+        df = x.iloc[:,1:2]   #x with no dates
+        today_scaled=[]
+        curr_day=[]
+        for i in range(len(df)):
+            
+            if i > fc_window:
+                
+                if i + 1 < len(df):                    # should i define this loop as its own function?
+                    curr_day = df[i+1:]
+                    curr_day.append(curr_day)
+                 return(curr_day)
+            
+             dist_calc = df[i - fc_window:i]
+             dist_calc_min = dist_calc.min()
+             dist_calc_max = dist_calc.max()
+             min = -1  # min weight
+             max = 1  # max weight
+
+             today_std = ((curr_day - dist_calc_min) / (dist_calc_max - dist_calc_min))
+             today_transformed = ((today_std * (max - min)) + min)
+             today_scaled.append(today_transformed)
+            
+             return()
+
+         return 
+
+     print(today_scaled)
+
+    def wrapper(self,x):   #wraps the weights to be parsed into the strategy
+        macd = self.above_macd(x)
+        signal = macd.copy()
+        tw = pd.DataFrame(self.scaler(signal))    #this makes the trading weights
+        return tw
+
+
+ticker = 'spy'
+start = '2013-01-01'
+end = '2018-06-06'
+macd_n = 10
+macd_m = 26
+rsi_n = 14
+rsi_m = 10
+so_n = 14
+so_m = 3
+fc_window = 252
+i = vci(ticker, start, end,
+                 macd_n, macd_m,
+                 rsi_n,rsi_m,
+                 so_n, so_m, fc_window)
+
+data = bt.get('spy')
+print(i.wrapper(data))
+'''
+s = bt.Strategy('weights',
+                        [bt.algos.WeighTarget(i.wrapper()),
+                        bt.algos.RunAfterDays(260),   #this lets our dataframe for weight allocation fill first
+                         bt.algos.Rebalance()],
+                        [ticker])
+t = bt.Backtest(s,data)
+
+res = bt.run(t)
+'''
+
+#use df to store data
+#df to store weights
+#create variable to store weights, list or array
