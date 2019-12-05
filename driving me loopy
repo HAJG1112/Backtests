@@ -50,7 +50,8 @@ class vci():
                 today_std = ((curr_value - dist_calc_min) / (dist_calc_max - dist_calc_min))
                 today_scaled = ((today_std * (max - min)) + min)
                 #tw.append(today_scaled, ignore_index=True)
-                return today_scaled
+                return today_scaled  #####this needs to fill in the nan dataframe called tw!!!!!!!
+
 
 
     def wrapper(self,x):   #wraps the weights to be parsed into the strategy
