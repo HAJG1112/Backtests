@@ -32,26 +32,27 @@ class vci():
 
     def scaler(self, x):
         df = x.iloc[:, :]
-          #creates a copy and makes it empty to fill values to
+        r = pd.DataFrame()
         for i in range(len(df)):
-            tw = df.copy()
-            tw = tw.iloc[fc_window:]
-            tw[self.ticker] = np.nan
-            if i > self.fc_window and i + 1 < len(df) :
+            if i > self.fc_window and i + 1 < len(df):
                 # print('position i: %s' %(i))
+                t = df.iloc[self.fc_window:]    #this is already date time indexed
                 dist_calc = df[i - self.fc_window:i]
                 dist_calc_min = dist_calc.min()
                 dist_calc_max = dist_calc.max()
-                curr_value = x.iloc[i + 1]
-                # print('curr_date: %s curr_value: %s date: %s dist_min: %s dist_max: %s' %(curr_date, curr_value, dist_date, dist_min, dist_max))
+                #curr_value = pd.DataFrame(t.iloc[i-self.fc_window]).transpose() #probably not the best method, but it works                                                                           # print('curr_date: %s curr_value: %s date: %s dist_min: %s dist_max: %s' %(curr_date, curr_value, dist_date, dist_min, dist_max))
+                curr_value = t.iloc[[i-self.fc_window]] #double brackets keeps it a dataframe
+
                 min = -1  # min weight
                 max = 1  # max weight
-
                 today_std = ((curr_value - dist_calc_min) / (dist_calc_max - dist_calc_min))
                 today_scaled = ((today_std * (max - min)) + min)
-                #tw.append(today_scaled, ignore_index=True)
-                return today_scaled  #####this needs to fill in the nan dataframe called tw!!!!!!!
 
+                #append today scaled into a new dataframe, two values the index and the today scaled
+                #so once appended today_scaled is populated, merge data outside of
+                #move merge
+                appended_data = t.merge(right=today_scaled, how ='left', left_index = True, right_index = True)
+                return appended_data
 
 
     def wrapper(self,x):   #wraps the weights to be parsed into the strategy
