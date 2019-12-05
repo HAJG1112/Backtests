@@ -30,36 +30,28 @@ class vci():
         macd = (short_sma - long_sma)
         return (macd)
 
-
-    def scaler(self,x):
-        x = x.copy()
-        df = x.iloc[:,1:2]   #x with no dates
-        today_scaled=[]
-        curr_day=[]
+    def scaler(self, x):
+        df = x.iloc[:, :]
+          #creates a copy and makes it empty to fill values to
         for i in range(len(df)):
-            
-            if i > fc_window:
-                
-                if i + 1 < len(df):                    # should i define this loop as its own function?
-                    curr_day = df[i+1:]
-                    curr_day.append(curr_day)
-                 return(curr_day)
-            
-             dist_calc = df[i - fc_window:i]
-             dist_calc_min = dist_calc.min()
-             dist_calc_max = dist_calc.max()
-             min = -1  # min weight
-             max = 1  # max weight
+            tw = df.copy()
+            tw = tw.iloc[fc_window:]
+            tw[self.ticker] = np.nan
+            if i > self.fc_window and i + 1 < len(df) :
+                # print('position i: %s' %(i))
+                dist_calc = df[i - self.fc_window:i]
+                dist_calc_min = dist_calc.min()
+                dist_calc_max = dist_calc.max()
+                curr_value = x.iloc[i + 1]
+                # print('curr_date: %s curr_value: %s date: %s dist_min: %s dist_max: %s' %(curr_date, curr_value, dist_date, dist_min, dist_max))
+                min = -1  # min weight
+                max = 1  # max weight
 
-             today_std = ((curr_day - dist_calc_min) / (dist_calc_max - dist_calc_min))
-             today_transformed = ((today_std * (max - min)) + min)
-             today_scaled.append(today_transformed)
-            
-             return()
+                today_std = ((curr_value - dist_calc_min) / (dist_calc_max - dist_calc_min))
+                today_scaled = ((today_std * (max - min)) + min)
+                #tw.append(today_scaled, ignore_index=True)
+                return today_scaled
 
-         return 
-
-     print(today_scaled)
 
     def wrapper(self,x):   #wraps the weights to be parsed into the strategy
         macd = self.above_macd(x)
@@ -83,7 +75,7 @@ i = vci(ticker, start, end,
                  rsi_n,rsi_m,
                  so_n, so_m, fc_window)
 
-data = bt.get('spy')
+data = bt.get('spy',start = start,end = end)
 print(i.wrapper(data))
 '''
 s = bt.Strategy('weights',
