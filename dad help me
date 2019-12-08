@@ -30,33 +30,39 @@ class vci():
         macd = (short_sma - long_sma)
         return (macd)
 
-    def scaler(self,x):
-        x = x.copy()
-        today_df = x[fc_window+1:]#this needs to start after 252 values and roll each value, use a loop
-        today_scaled = []
-        for i in today_df:
-            today = today_df[i]
-            j = (252 + i)
-            dist_calc = x.iloc[i:j]            #create this dataset by taking the 'i-1' position from today up to the past 252 days
-            dist_calc_min = dist_calc.min()
-            dist_calc_max = dist_calc.max()
+    def prepare(self, asset):
+        w = fc_window # default window size
+        f = asset.copy()  # copy dataframe to ensure original is not affected
+        # create two columns for min and max
+        f['+min+'] = f[self.ticker].rolling(w).min()  # error in these two lines
+        f['+max+'] = f[self.ticker].rolling(w).max()
+        # further columns for scaled and tranformed
+        f['+sv+'] = np.nan
+        f['+trans+'] = np.nan
+        return f
+        pass
 
-            min = -1  # min weight
-            max = 1  # max weight
+    def scaler(self, asset):
+        f = self.prepare(asset)
+        minW = -1  # min weight
+        maxW = 1  # max weight
 
-            today_std = ((today - dist_calc_min) / (dist_calc_max - dist_calc_min))
-            today_transformed = ((today_std * (max - min)) + min)
-            today_scaled.append(today_transformed)
-        x['scaled'] = today_scaled
-        print(x)
-
-
+        for i in range(len(f)):
+            cv = (f.iloc[i][0])
+            min_prev = (f.iloc[i-1]['+min+'])
+            max_prev = (f.iloc[i-1]['+max+'])
+            sv = (cv - min_prev)/(max_prev - min_prev)  # scaled value calculation
+            sv = (sv * 2)-1
+            t = maxW if sv > maxW else minW if sv < minW else sv # transformed calculation
+            f['+sv+'][i] = sv
+            f['+trans+'][i] = t
+            pass
 
     def wrapper(self,x):   #wraps the weights to be parsed into the strategy
         macd = self.above_macd(x)
-        signal = macd.copy()
-        tw = pd.DataFrame(self.scaler(signal))    #this makes the trading weights
+        tw = pd.DataFrame(self.scaler(macd))    #this makes the trading weights
         return tw
+
 
 
 ticker = 'spy'
@@ -74,8 +80,12 @@ i = vci(ticker, start, end,
                  rsi_n,rsi_m,
                  so_n, so_m, fc_window)
 
-data = bt.get('spy')
+data = bt.get('spy',start = start,end = end)
+
 print(i.wrapper(data))
+
+
+
 '''
 s = bt.Strategy('weights',
                         [bt.algos.WeighTarget(i.wrapper()),
