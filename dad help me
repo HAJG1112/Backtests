@@ -30,9 +30,9 @@ class vci():
         macd = (short_sma - long_sma)
         return (macd)
 
-    def prepare(self, asset):
+    def prepare(self, indicator):
         w = fc_window # default window size
-        f = asset.copy()  # copy dataframe to ensure original is not affected
+        f = indicator.copy()  # copy dataframe to ensure original is not affected
         # create two columns for min and max
         f['+min+'] = f[self.ticker].rolling(w).min()  # error in these two lines
         f['+max+'] = f[self.ticker].rolling(w).max()
@@ -42,11 +42,10 @@ class vci():
         return f
         pass
 
-    def scaler(self, asset):
-        f = self.prepare(asset)
+    def scaler(self, indicator):
+        f = self.prepare(indicator)
         minW = -1  # min weight
         maxW = 1  # max weight
-
         for i in range(len(f)):
             cv = (f.iloc[i][0])
             min_prev = (f.iloc[i-1]['+min+'])
